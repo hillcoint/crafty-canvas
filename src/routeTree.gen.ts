@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CobroRouteImport } from './routes/cobro'
 import { Route as HorasRouteImport } from './routes/horas'
 import { Route as RendimientoRouteImport } from './routes/rendimiento'
@@ -18,6 +19,11 @@ import { Route as ViajesRouteImport } from './routes/viajes'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CobroRoute = CobroRouteImport.update({
@@ -43,6 +49,7 @@ const ViajesRoute = ViajesRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/cobro': typeof CobroRoute
   '/horas': typeof HorasRoute
   '/rendimiento': typeof RendimientoRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/cobro': typeof CobroRoute
   '/horas': typeof HorasRoute
   '/rendimiento': typeof RendimientoRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/cobro': typeof CobroRoute
   '/horas': typeof HorasRoute
   '/rendimiento': typeof RendimientoRoute
@@ -65,14 +74,22 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/cobro' | '/horas' | '/rendimiento' | '/viajes'
+  fullPaths: '/' | '/admin' | '/cobro' | '/horas' | '/rendimiento' | '/viajes'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/cobro' | '/horas' | '/rendimiento' | '/viajes'
-  id: '__root__' | '/' | '/cobro' | '/horas' | '/rendimiento' | '/viajes'
+  to: '/' | '/admin' | '/cobro' | '/horas' | '/rendimiento' | '/viajes'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/cobro'
+    | '/horas'
+    | '/rendimiento'
+    | '/viajes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   CobroRoute: typeof CobroRoute
   HorasRoute: typeof HorasRoute
   RendimientoRoute: typeof RendimientoRoute
@@ -86,6 +103,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cobro': {
@@ -121,6 +145,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   CobroRoute: CobroRoute,
   HorasRoute: HorasRoute,
   RendimientoRoute: RendimientoRoute,
