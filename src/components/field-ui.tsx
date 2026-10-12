@@ -55,7 +55,7 @@ export function Select(p: SelectHTMLAttributes<HTMLSelectElement>) {
   return <select {...p} className={cn(inputCls, "appearance-auto", p.className)} />;
 }
 
-export function Stat({ label, value, sub, tone }: { label: string; value: ReactNode; sub?: ReactNode; tone?: "alert" | "ok" }) {
+export function Stat({ label, value, sub, tone }: { label: string; value: ReactNode; sub?: ReactNode | undefined; tone?: "alert" | "ok" | undefined }) {
   return (
     <div
       className={cn(
