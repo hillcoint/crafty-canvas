@@ -102,6 +102,6 @@ export function crearDatosDemo(): DB {
       { clave: "hr_volq14", concepto: "Volquete 14 m³", unidad: "h", mxn: 650 },
       { clave: "hr_volq20", concepto: "Volquete 20 m³ (ejemplo)", unidad: "h", mxn: 850 },
     ],
-    seleccion: { obraId: "o1", frenteId: "f1", fecha: fin },
+    seleccion: { obraId: "o1", frenteId: "f1", fecha: horas.length ? horas[horas.length - 1]!.fecha : fin },
   };
 }
