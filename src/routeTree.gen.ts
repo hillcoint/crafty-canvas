@@ -10,33 +10,73 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CobroRouteImport } from './routes/cobro'
+import { Route as HorasRouteImport } from './routes/horas'
+import { Route as RendimientoRouteImport } from './routes/rendimiento'
+import { Route as ViajesRouteImport } from './routes/viajes'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CobroRoute = CobroRouteImport.update({
+  id: '/cobro',
+  path: '/cobro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HorasRoute = HorasRouteImport.update({
+  id: '/horas',
+  path: '/horas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RendimientoRoute = RendimientoRouteImport.update({
+  id: '/rendimiento',
+  path: '/rendimiento',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ViajesRoute = ViajesRouteImport.update({
+  id: '/viajes',
+  path: '/viajes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/cobro': typeof CobroRoute
+  '/horas': typeof HorasRoute
+  '/rendimiento': typeof RendimientoRoute
+  '/viajes': typeof ViajesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/cobro': typeof CobroRoute
+  '/horas': typeof HorasRoute
+  '/rendimiento': typeof RendimientoRoute
+  '/viajes': typeof ViajesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/cobro': typeof CobroRoute
+  '/horas': typeof HorasRoute
+  '/rendimiento': typeof RendimientoRoute
+  '/viajes': typeof ViajesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/cobro' | '/horas' | '/rendimiento' | '/viajes'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/cobro' | '/horas' | '/rendimiento' | '/viajes'
+  id: '__root__' | '/' | '/cobro' | '/horas' | '/rendimiento' | '/viajes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CobroRoute: typeof CobroRoute
+  HorasRoute: typeof HorasRoute
+  RendimientoRoute: typeof RendimientoRoute
+  ViajesRoute: typeof ViajesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +88,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cobro': {
+      id: '/cobro'
+      path: '/cobro'
+      fullPath: '/cobro'
+      preLoaderRoute: typeof CobroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/horas': {
+      id: '/horas'
+      path: '/horas'
+      fullPath: '/horas'
+      preLoaderRoute: typeof HorasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rendimiento': {
+      id: '/rendimiento'
+      path: '/rendimiento'
+      fullPath: '/rendimiento'
+      preLoaderRoute: typeof RendimientoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/viajes': {
+      id: '/viajes'
+      path: '/viajes'
+      fullPath: '/viajes'
+      preLoaderRoute: typeof ViajesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CobroRoute: CobroRoute,
+  HorasRoute: HorasRoute,
+  RendimientoRoute: RendimientoRoute,
+  ViajesRoute: ViajesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
