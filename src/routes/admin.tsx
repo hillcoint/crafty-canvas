@@ -35,7 +35,7 @@ function Admin({ db }: { db: DB }) {
       <Panel>
         <Titulo>Administración</Titulo>
         <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (clave === ADMIN_KEY) setOk(true); else setErr(true); }}>
-          <Campo label="Clave de acceso"><Input type="password" value={clave} onChange={(e) => { setClave(e.target.value); setErr(false); }} autoFocus /></Campo>
+          <Campo label={`Clave de acceso (${ADMIN_KEY})`}><Input type="password" value={clave} onChange={(e) => { setClave(e.target.value); setErr(false); }} autoFocus /></Campo>
           {err && <Aviso tone="error">Clave incorrecta.</Aviso>}
           <Btn type="submit" className="w-full">Entrar</Btn>
         </form>
