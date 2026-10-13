@@ -69,15 +69,27 @@ function Cobro({ db }: { db: DB }) {
         </div>
       </Panel>
 
+      {c.tarifasPendientes.length > 0 && (
+        <Panel className="border-2 border-destructive" >
+          <p role="alert" className="text-sm font-semibold">
+            Comparación incompleta: faltan tarifas para {Array.from(new Set(c.tarifasPendientes)).join(", ")}.
+            Configúralas en Administración antes de tomar decisiones de cobro.
+          </p>
+        </Panel>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <Total label="Cobro por volumen" value={c.totalVol} win={mayor === "volumen"} />
         <Total label="Cobro por horas" value={c.totalHor} win={mayor === "horas"} />
       </div>
       <Panel className="border-2 border-primary">
         <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Diferencia (MXN)</div>
-        <div className="font-display text-4xl font-black text-primary">{mxn(Math.abs(c.diferencia))}</div>
+        <div className="font-display text-4xl font-black text-primary">{mxn(c.diferencia)}</div>
         <p className="mt-1 font-semibold">
-          {mayor === "igual" ? "Ambos esquemas dan el mismo importe." : `Es mayor el cobro por ${mayor} (${mxn(c.totalVol)} vs ${mxn(c.totalHor)}).`}
+          {c.tarifasPendientes.length
+            ? "Resultado provisional: hay conceptos sin tarifa."
+            : mayor === "igual"
+              ? "Ambos esquemas dan el mismo importe."
+              : `El cobro por ${mayor} supera al otro en ${mxn(Math.abs(c.diferencia))}. Diferencia = volumen − horas.`}
         </p>
       </Panel>
 
