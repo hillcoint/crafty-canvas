@@ -48,6 +48,8 @@ export interface RegistroHoras {
   horometroInicial: number | null;
   horometroFinal: number | null;
   horas: number;
+  /** Tarifa por tipo/capacidad al registrar el parte; evita recalcular con otra capacidad. */
+  tarifaClave?: string;
 }
 
 export interface Tarifa {
