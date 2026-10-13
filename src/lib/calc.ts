@@ -34,6 +34,7 @@ export function conflictoViaje(
 export function calcularHoras(ini: number, fin: number): { ok: true; horas: number } | { ok: false; error: string } {
   if (!Number.isFinite(ini) || !Number.isFinite(fin)) return { ok: false, error: "Captura ambos horómetros." };
   if (ini < 0 || fin < 0) return { ok: false, error: "Los horómetros no pueden ser negativos." };
+  if (fin < ini) return { ok: false, error: "El horómetro final es menor que el inicial (horas negativas)." };
   const h = Math.round((fin - ini) * 10) / 10;
   if (h < 0) return { ok: false, error: "El horómetro final es menor que el inicial (horas negativas)." };
   if (h > 24) return { ok: false, error: "Más de 24 h en un día: revisa los horómetros." };
@@ -89,17 +90,18 @@ export function validarHorasVolquete(
   fecha: string,
   horas: number,
 ): { ok: true; horas: number } | { ok: false; error: string } {
-  if (!Number.isFinite(horas) || horas <= 0) {
+  if (!Number.isFinite(horas) || Math.round(horas * 10) / 10 <= 0) {
     return { ok: false, error: "Introduce un número de horas mayor que cero." };
   }
   const delDia = db.horas.filter((h) => h.recurso === "volquete" && h.recursoId === volqueteId && h.fecha === fecha);
   if (delDia.some((h) => h.frenteId === frenteId)) {
     return { ok: false, error: "Ya hay horas para este volquete, frente y fecha. Elimina o corrige ese registro antes de volver a guardarlo." };
   }
-  if (delDia.reduce((total, h) => total + h.horas, 0) + horas > HORAS_MAX_JORNADA + 1e-9) {
+  const horasRedondeadas = Math.round(horas * 10) / 10;
+  if (delDia.reduce((total, h) => total + h.horas, 0) + horasRedondeadas > HORAS_MAX_JORNADA + 1e-9) {
     return { ok: false, error: "El volquete supera las 12 horas facturables de la jornada." };
   }
-  return { ok: true, horas: Math.round(horas * 10) / 10 };
+  return { ok: true, horas: horasRedondeadas };
 }
 
 /** m³/h evitando división entre cero */
