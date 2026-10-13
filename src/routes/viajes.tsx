@@ -5,7 +5,7 @@ import { SelectorFrente } from "@/components/SelectorFrente";
 import { Aviso, Btn, Campo, Input, Panel, Select, Stat, Titulo, Vacio } from "@/components/field-ui";
 import { conflictoViaje, MIN_ENTRE_VIAJES, sumaM3, viajesDelDia } from "@/lib/calc";
 import { actualizar, nuevoId } from "@/lib/store";
-import { horaDeISO, num, toLocalInput, hoy } from "@/lib/dates";
+import { horaDeISO, num, toLocalInput, hoy, ymd } from "@/lib/dates";
 import type { DB, Viaje } from "@/lib/types";
 
 export const Route = createFileRoute("/viajes")({
@@ -61,7 +61,7 @@ function Viajes({ db }: { db: DB }) {
       });
     }
     const viaje: Viaje = { id: nuevoId("v"), volqueteId: vol.id, frenteId: frente.id, obraId: frente.obraId, fechaHora: cuando.toISOString(), capacidad: vol.capacidad };
-    actualizar((d) => ({ ...d, viajes: [...d.viajes, viaje] }));
+    actualizar((d) => ({ ...d, viajes: [...d.viajes, viaje], seleccion: { ...d.seleccion, fecha: ymd(cuando) } }));
     setMsg({ tone: "ok", text: `Salida registrada: ${vol.nombre} · ${horaDeISO(viaje.fechaHora)} · +${vol.capacidad} m³` });
     setMomento(toLocalInput(new Date()));
   }

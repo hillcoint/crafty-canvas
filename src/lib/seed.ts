@@ -37,8 +37,8 @@ export function crearDatosDemo(): DB {
   const frentes: Frente[] = [
     { id: "f1", obraId: "o1", nombre: "Relleno terraplén cad. 2+400", tipo: "relleno", maquinaIds: ["m1"], volqueteIds: ["v5", "v6", "v1"] },
     { id: "f2", obraId: "o1", nombre: "Corte talud cad. 3+100", tipo: "corte", maquinaIds: ["m3"], volqueteIds: ["v8", "v7", "v2"] },
-    { id: "f3", obraId: "o2", nombre: "Banco El Bellote", tipo: "banco", maquinaIds: ["m2"], volqueteIds: ["v3", "v4"] },
-    { id: "f4", obraId: "o2", nombre: "Nivelación plataforma A", tipo: "nivelacion", maquinaIds: ["m4"], volqueteIds: [] },
+    { id: "f3", obraId: "o2", nombre: "Banco El Bellote", tipo: "banco", maquinaIds: ["m2"], volqueteIds: ["v3"] },
+    { id: "f4", obraId: "o2", nombre: "Nivelación plataforma A", tipo: "nivelacion", maquinaIds: ["m4"], volqueteIds: ["v4"] },
   ];
 
   const viajes: Viaje[] = [];
@@ -66,7 +66,7 @@ export function crearDatosDemo(): DB {
           volumen += capDe(vid);
           minuto += 28 + Math.floor(r() * 22);
         }
-        horas.push({ id: `sh${n++}`, recurso: "volquete", recursoId: vid, frenteId: f.id, fecha, horometroInicial: null, horometroFinal: null, horas: 9 + Math.round(r() * 2 * 2) / 2 });
+        horas.push({ id: `sh${n++}`, recurso: "volquete", recursoId: vid, frenteId: f.id, fecha, horometroInicial: null, horometroFinal: null, horas: 9 + Math.round(r() * 2 * 2) / 2, tarifaClave: `hr_volq${capDe(vid)}` });
       }
       for (const mid of f.maquinaIds) {
         const m = maqDe(mid);

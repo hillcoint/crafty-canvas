@@ -29,6 +29,17 @@ function cargar(): DB {
         const parsed = JSON.parse(raw) as DB;
         if (parsed.version === DB_VERSION) {
           parsed.seleccion.fecha = parsed.seleccion.fecha || hoy();
+          // Compatibilidad con datos localStorage anteriores: fijar la tarifa por
+          // capacidad sin descartar viajes u horas que el usuario haya añadido.
+          let cambio = false;
+          parsed.horas = parsed.horas.map((registro) => {
+            if (registro.recurso !== "volquete" || registro.tarifaClave) return registro;
+            const unidad = parsed.volquetes.find((v) => v.id === registro.recursoId);
+            if (!unidad) return registro;
+            cambio = true;
+            return { ...registro, tarifaClave: `hr_volq${unidad.capacidad}` };
+          });
+          if (cambio) persistir(parsed);
           return parsed;
         }
       }

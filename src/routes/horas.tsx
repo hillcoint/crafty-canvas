@@ -3,7 +3,7 @@ import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { SelectorFrente } from "@/components/SelectorFrente";
 import { Aviso, Btn, Campo, Input, Panel, Select, Titulo, Vacio } from "@/components/field-ui";
-import { calcularHoras } from "@/lib/calc";
+import { validarHorasMaquina, validarHorasVolquete } from "@/lib/calc";
 import { actualizar, nuevoId } from "@/lib/store";
 import { num } from "@/lib/dates";
 import type { DB } from "@/lib/types";
@@ -22,10 +22,15 @@ export const Route = createFileRoute("/horas")({
 
 type Msg = { tone: "ok" | "error"; text: string } | null;
 
-function ultimoHorometro(db: DB, maquinaId: string): number | null {
-  const regs = db.horas.filter((h) => h.recurso === "maquina" && h.recursoId === maquinaId && h.horometroFinal !== null);
+function ultimoHorometro(db: DB, maquinaId: string, fecha: string): number | null {
+  const regs = db.horas.filter((h) =>
+    h.recurso === "maquina" && h.recursoId === maquinaId &&
+    h.fecha <= fecha && h.horometroFinal !== null,
+  );
   if (!regs.length) return null;
-  return regs.reduce((max, r) => Math.max(max, r.horometroFinal ?? 0), 0);
+  const masReciente = [...regs].sort((a, b) => b.fecha.localeCompare(a.fecha) ||
+    (b.horometroFinal ?? 0) - (a.horometroFinal ?? 0))[0];
+  return masReciente.horometroFinal;
 }
 
 function Horas({ db }: { db: DB }) {
@@ -43,8 +48,8 @@ function Horas({ db }: { db: DB }) {
         <Titulo>Horas</Titulo>
         <SelectorFrente db={db} />
       </Panel>
-      <FormMaquina db={db} frenteId={frente.id} fecha={fecha} key={`m-${frente.id}`} />
-      <FormVolquete db={db} frenteId={frente.id} fecha={fecha} key={`v-${frente.id}`} />
+      <FormMaquina db={db} frenteId={frente.id} fecha={fecha} key={`m-${frente.id}-${fecha}`} />
+      <FormVolquete db={db} frenteId={frente.id} fecha={fecha} key={`v-${frente.id}-${fecha}`} />
       <Panel>
         <Titulo>Registros del día</Titulo>
         {regs.length === 0 ? <Vacio>Sin horas registradas para este frente y fecha.</Vacio> : (
@@ -74,19 +79,21 @@ function FormMaquina({ db, frenteId, fecha }: { db: DB; frenteId: string; fecha:
   const frente = db.frentes.find((f) => f.id === frenteId)!;
   const ordenadas = [...db.maquinas].sort((a, b) => Number(frente.maquinaIds.includes(b.id)) - Number(frente.maquinaIds.includes(a.id)));
   const [maqId, setMaqId] = useState(ordenadas[0]?.id ?? "");
-  const ult = maqId ? ultimoHorometro(db, maqId) : null;
+  const ult = maqId ? ultimoHorometro(db, maqId, fecha) : null;
   const [ini, setIni] = useState(ult !== null ? String(ult) : "");
   const [fin, setFin] = useState("");
   const [msg, setMsg] = useState<Msg>(null);
-  const calc = ini !== "" && fin !== "" ? calcularHoras(Number(ini), Number(fin)) : null;
+  const calc = ini !== "" && fin !== "" ? validarHorasMaquina(db, maqId, fecha, Number(ini), Number(fin)) : null;
 
   function guardar() {
-    const r = calcularHoras(Number(ini), Number(fin));
+    const r = validarHorasMaquina(db, maqId, fecha, Number(ini), Number(fin));
     if (ini === "" || fin === "") return setMsg({ tone: "error", text: "Captura horómetro inicial y final." });
+    if (!maqId) return setMsg({ tone: "error", text: "Selecciona una máquina." });
     if (!r.ok) return setMsg({ tone: "error", text: r.error });
+    if (!frente.maquinaIds.includes(maqId) && !window.confirm("Esta máquina no está asignada al frente. ¿Registrar de todos modos?")) return;
     actualizar((d) => ({
       ...d,
-      horas: [...d.horas, { id: nuevoId("h"), recurso: "maquina", recursoId: maqId, frenteId, fecha, horometroInicial: Number(ini), horometroFinal: Number(fin), horas: r.horas }],
+      horas: [...d.horas, { id: nuevoId("h"), recurso: "maquina", recursoId: maqId, frenteId, fecha, horometroInicial: Number(ini), horometroFinal: Number(fin), horas: r.horas, tarifaClave: d.maquinas.find((m) => m.id === maqId)?.tipo === "excavadora" ? (d.maquinas.find((m) => m.id === maqId)!.toneladas >= 30 ? "hr_exc30" : "hr_exc20") : "hr_cargador" }],
     }));
     setMsg({ tone: "ok", text: `Guardado: ${num(r.horas)} h` });
     setIni(fin);
@@ -99,7 +106,7 @@ function FormMaquina({ db, frenteId, fecha }: { db: DB; frenteId: string; fecha:
       {db.maquinas.length === 0 ? <Vacio>No hay maquinaria registrada.</Vacio> : (
         <div className="space-y-3">
           <Campo label="Máquina">
-            <Select value={maqId} onChange={(e) => { setMaqId(e.target.value); const u = ultimoHorometro(db, e.target.value); setIni(u !== null ? String(u) : ""); setMsg(null); }}>
+            <Select value={maqId} onChange={(e) => { setMaqId(e.target.value); const u = ultimoHorometro(db, e.target.value, fecha); setIni(u !== null ? String(u) : ""); setMsg(null); }}>
               {ordenadas.map((m) => <option key={m.id} value={m.id}>{m.nombre} · {m.tipo} {m.toneladas} t{frente.maquinaIds.includes(m.id) ? " (asignada)" : ""}</option>)}
             </Select>
           </Campo>
@@ -126,12 +133,12 @@ function FormVolquete({ db, frenteId, fecha }: { db: DB; frenteId: string; fecha
   const [msg, setMsg] = useState<Msg>(null);
 
   function guardar() {
-    const n = Number(h);
-    if (h === "" || !Number.isFinite(n)) return setMsg({ tone: "error", text: "Captura las horas facturables." });
-    if (n < 0) return setMsg({ tone: "error", text: "Las horas no pueden ser negativas." });
-    if (n > 24) return setMsg({ tone: "error", text: "Más de 24 h en un día no es válido." });
-    actualizar((d) => ({ ...d, horas: [...d.horas, { id: nuevoId("h"), recurso: "volquete", recursoId: vid, frenteId, fecha, horometroInicial: null, horometroFinal: null, horas: Math.round(n * 10) / 10 }] }));
-    setMsg({ tone: "ok", text: `Guardado: ${num(n)} h facturables` });
+    if (h === "" || !vid) return setMsg({ tone: "error", text: "Selecciona el volquete y captura sus horas facturables." });
+    const validacion = validarHorasVolquete(db, vid, frenteId, fecha, Number(h));
+    if (!validacion.ok) return setMsg({ tone: "error", text: validacion.error });
+    if (!frente.volqueteIds.includes(vid) && !window.confirm("Este volquete no está asignado al frente. ¿Registrar de todos modos?")) return;
+    actualizar((d) => ({ ...d, horas: [...d.horas, { id: nuevoId("h"), recurso: "volquete", recursoId: vid, frenteId, fecha, horometroInicial: null, horometroFinal: null, horas: validacion.horas, tarifaClave: `hr_volq${d.volquetes.find((v) => v.id === vid)?.capacidad ?? ""}` }] }));
+    setMsg({ tone: "ok", text: `Guardado: ${num(validacion.horas)} h facturables` });
     setH("");
   }
 
