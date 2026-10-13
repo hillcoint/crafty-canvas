@@ -37,9 +37,16 @@ export function SelectorFrente({ db, conFrente = true }: { db: DB; conFrente?: b
           </Select>
         </Campo>
       )}
-      <div className={conFrente ? "min-w-0 sm:col-span-2 lg:col-span-1" : "min-w-0"}><Campo label="Fecha">
-        <Input type="date" value={fecha} onChange={(e) => e.target.value && set({ fecha: e.target.value })} className="w-full" />
-      </Campo></div>
+      <div className={conFrente ? "min-w-0 sm:col-span-2 lg:col-span-1" : "min-w-0"}>
+        <Campo label="Fecha">
+          <Input
+            type="date"
+            value={fecha}
+            onChange={(e) => e.target.value && set({ fecha: e.target.value })}
+            className="w-full"
+          />
+        </Campo>
+      </div>
     </div>
   );
 }
