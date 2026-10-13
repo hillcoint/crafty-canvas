@@ -1,0 +1,22 @@
+name: Verificación M.I Maquinaria
+on:
+  push:
+    branches:
+      - fix/kodarvia-validaciones-y-cobro
+  pull_request:
+    branches:
+      - main
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v4
+      - name: Preparar Bun
+        uses: oven-sh/setup-bun@v2
+      - name: Instalar dependencias
+        run: bun install --frozen-lockfile
+      - name: Pruebas unitarias
+        run: bun run test
+      - name: Compilar aplicación
+        run: bun run build
