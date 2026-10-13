@@ -156,16 +156,20 @@ function Obras({ db }: { db: DB }) {
     <Panel className="border-0 bg-transparent p-3 sm:p-4">
       <ul className="mb-3 space-y-2">
         {db.obras.map((o) => (
-          <li key={o.id} className="grid grid-cols-[1fr_1fr_auto] gap-2">
-            <Input value={o.nombre} onChange={(e) => actualizar((d) => ({ ...d, obras: d.obras.map((x) => (x.id === o.id ? { ...x, nombre: e.target.value } : x)) }))} />
-            <Input value={o.ubicacion} onChange={(e) => actualizar((d) => ({ ...d, obras: d.obras.map((x) => (x.id === o.id ? { ...x, ubicacion: e.target.value } : x)) }))} />
+          <li key={o.id} className="flex items-start gap-2">
+            <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
+              <Input aria-label="Nombre de obra" value={o.nombre} onChange={(e) => actualizar((d) => ({ ...d, obras: d.obras.map((x) => (x.id === o.id ? { ...x, nombre: e.target.value } : x)) }))} />
+            <Input aria-label="Ubicación de obra" value={o.ubicacion} onChange={(e) => actualizar((d) => ({ ...d, obras: d.obras.map((x) => (x.id === o.id ? { ...x, ubicacion: e.target.value } : x)) }))} />
+            </div>
             <Btn size="sm" variant="ghost" onClick={() => permitirEliminar(db.frentes.some((f) => f.obraId === o.id && historicoFrente(db, f.id)), o.nombre) && actualizar((d) => ({ ...d, obras: d.obras.filter((x) => x.id !== o.id), frentes: d.frentes.filter((f) => f.obraId !== o.id) }))}>✕</Btn>
           </li>
         ))}
       </ul>
-      <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
-        <Input placeholder="Nueva obra" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+      <div className="flex items-start gap-2">
+        <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
+          <Input placeholder="Nueva obra" value={nombre} onChange={(e) => setNombre(e.target.value)} />
         <Input placeholder="Ubicación" value={ubic} onChange={(e) => setUbic(e.target.value)} />
+        </div>
         <Btn size="sm" disabled={!nombre.trim()} onClick={() => { actualizar((d) => ({ ...d, obras: [...d.obras, { id: nuevoId("o"), nombre: nombre.trim(), ubicacion: ubic.trim() }] })); setNombre(""); setUbic(""); }}>+</Btn>
       </div>
     </Panel>
@@ -202,7 +206,7 @@ function Frentes({ db }: { db: DB }) {
               <Input value={f.nombre} onChange={(e) => actualizar((d) => ({ ...d, frentes: d.frentes.map((x) => (x.id === f.id ? { ...x, nombre: e.target.value } : x)) }))} />
               <Btn size="sm" variant="ghost" onClick={() => permitirEliminar(historicoFrente(db, f.id), f.nombre) && actualizar((d) => ({ ...d, frentes: d.frentes.filter((x) => x.id !== f.id) }))}>✕</Btn>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <Select value={f.tipo} disabled={historicoFrente(db, f.id)} title={historicoFrente(db, f.id) ? "Tipo bloqueado por tener producción histórica" : undefined} onChange={(e) => actualizar((d) => ({ ...d, frentes: d.frentes.map((x) => (x.id === f.id ? { ...x, tipo: e.target.value as TipoFrente } : x)) }))}>
                 {Object.entries(TIPO_FRENTE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </Select>
@@ -217,15 +221,15 @@ function Frentes({ db }: { db: DB }) {
           </li>
         ))}
       </ul>
-      <div className="grid grid-cols-2 gap-2">
-        <Input className="col-span-2" placeholder="Nombre del nuevo frente" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <Input className="sm:col-span-2" placeholder="Nombre del nuevo frente" value={nombre} onChange={(e) => setNombre(e.target.value)} />
         <Select value={tipo} onChange={(e) => setTipo(e.target.value as TipoFrente)}>
           {Object.entries(TIPO_FRENTE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </Select>
         <Select value={obraId} onChange={(e) => setObraId(e.target.value)}>
           {db.obras.map((o) => <option key={o.id} value={o.id}>{o.nombre}</option>)}
         </Select>
-        <Btn className="col-span-2" disabled={!nombre.trim() || !obraId} onClick={() => { actualizar((d) => ({ ...d, frentes: [...d.frentes, { id: nuevoId("f"), obraId, nombre: nombre.trim(), tipo, maquinaIds: [], volqueteIds: [] }] })); setNombre(""); }}>Agregar frente</Btn>
+        <Btn className="sm:col-span-2" disabled={!nombre.trim() || !obraId} onClick={() => { actualizar((d) => ({ ...d, frentes: [...d.frentes, { id: nuevoId("f"), obraId, nombre: nombre.trim(), tipo, maquinaIds: [], volqueteIds: [] }] })); setNombre(""); }}>Agregar frente</Btn>
       </div>
     </Panel>
   );
@@ -254,16 +258,20 @@ function Volquetes({ db }: { db: DB }) {
       <p className="mb-2 text-xs text-muted-foreground">Cambiar la capacidad solo afecta a viajes nuevos; los históricos conservan la suya.</p>
       <ul className="mb-3 space-y-2">
         {db.volquetes.map((v) => (
-          <li key={v.id} className="grid grid-cols-[1fr_6rem_auto] gap-2">
-            <Input value={v.nombre} onChange={(e) => actualizar((d) => ({ ...d, volquetes: d.volquetes.map((x) => (x.id === v.id ? { ...x, nombre: e.target.value } : x)) }))} />
+          <li key={v.id} className="flex items-start gap-2">
+            <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_7rem]">
+              <Input aria-label="Nombre de volquete" value={v.nombre} onChange={(e) => actualizar((d) => ({ ...d, volquetes: d.volquetes.map((x) => (x.id === v.id ? { ...x, nombre: e.target.value } : x)) }))} />
             <Input type="number" min="1" inputMode="decimal" aria-label="Capacidad m³" value={v.capacidad} onChange={(e) => { const n = Number(e.target.value); if (n > 0) actualizar((d) => ({ ...d, volquetes: d.volquetes.map((x) => (x.id === v.id ? { ...x, capacidad: n } : x)) })); }} />
+            </div>
             <Btn size="sm" variant="ghost" onClick={() => permitirEliminar(historicoVolquete(db, v.id), v.nombre) && actualizar((d) => ({ ...d, volquetes: d.volquetes.filter((x) => x.id !== v.id), frentes: d.frentes.map((f) => ({ ...f, volqueteIds: f.volqueteIds.filter((x) => x !== v.id) })) }))}>✕</Btn>
           </li>
         ))}
       </ul>
-      <div className="grid grid-cols-[1fr_6rem_auto] gap-2">
-        <Input placeholder="Nuevo volquete" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+      <div className="flex items-start gap-2">
+        <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_7rem]">
+          <Input placeholder="Nuevo volquete" value={nombre} onChange={(e) => setNombre(e.target.value)} />
         <Input type="number" min="1" value={cap} onChange={(e) => setCap(e.target.value)} aria-label="Capacidad m³" />
+        </div>
         <Btn size="sm" disabled={!nombre.trim() || !(Number(cap) > 0)} onClick={() => { actualizar((d) => ({ ...d, volquetes: [...d.volquetes, { id: nuevoId("v"), nombre: nombre.trim(), capacidad: Number(cap) }] })); setNombre(""); }}>+</Btn>
       </div>
       <p className="mt-2 text-xs text-muted-foreground">La tarifa por hora se busca por capacidad (clave hr_volq7, hr_volq14, hr_volq20…).</p>
@@ -286,7 +294,7 @@ function Maquinas({ db }: { db: DB }) {
               <Input value={m.nombre} onChange={(e) => upd(m.id, { nombre: e.target.value })} />
               <Btn size="sm" variant="ghost" onClick={() => permitirEliminar(historicoMaquina(db, m.id), m.nombre) && actualizar((d) => ({ ...d, maquinas: d.maquinas.filter((x) => x.id !== m.id), frentes: d.frentes.map((f) => ({ ...f, maquinaIds: f.maquinaIds.filter((x) => x !== m.id) })) }))}>✕</Btn>
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <Campo label="Tipo">
                 <Select value={m.tipo} disabled={historicoMaquina(db, m.id)} title={historicoMaquina(db, m.id) ? "Tipo bloqueado por tener historial" : undefined} onChange={(e) => upd(m.id, { tipo: e.target.value as TipoMaquina })}>
                   <option value="excavadora">Excavadora</option>
@@ -299,15 +307,15 @@ function Maquinas({ db }: { db: DB }) {
           </li>
         ))}
       </ul>
-      <div className="grid grid-cols-3 gap-2">
-        <Input className="col-span-3" placeholder="Nueva máquina" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <Input className="col-span-2 sm:col-span-3" placeholder="Nueva máquina" value={nombre} onChange={(e) => setNombre(e.target.value)} />
         <Select value={tipo} onChange={(e) => setTipo(e.target.value as TipoMaquina)}>
           <option value="excavadora">Excavadora</option>
           <option value="cargador">Cargador</option>
         </Select>
         <Input type="number" min="1" value={ton} onChange={(e) => setTon(e.target.value)} aria-label="Toneladas" />
         <Input type="number" min="1" value={m3h} onChange={(e) => setM3h(e.target.value)} aria-label="m³/h esperado" />
-        <Btn className="col-span-3" disabled={!nombre.trim() || !(Number(ton) > 0) || !(Number(m3h) > 0)} onClick={() => { actualizar((d) => ({ ...d, maquinas: [...d.maquinas, { id: nuevoId("m"), nombre: nombre.trim(), tipo, toneladas: Number(ton), m3hEsperado: Number(m3h) }] })); setNombre(""); }}>Agregar máquina</Btn>
+        <Btn className="col-span-2 sm:col-span-3" disabled={!nombre.trim() || !(Number(ton) > 0) || !(Number(m3h) > 0)} onClick={() => { actualizar((d) => ({ ...d, maquinas: [...d.maquinas, { id: nuevoId("m"), nombre: nombre.trim(), tipo, toneladas: Number(ton), m3hEsperado: Number(m3h) }] })); setNombre(""); }}>Agregar máquina</Btn>
       </div>
       <p className="mt-2 text-xs text-muted-foreground">Excavadoras ≥ 30 t usan la tarifa “Excavadora 30 t”; el resto “Excavadora 20 t”.</p>
     </Panel>
@@ -319,7 +327,7 @@ function Tarifas({ db }: { db: DB }) {
     <Panel className="border-0 bg-transparent p-3 sm:p-4">
       <ul className="space-y-2">
         {db.tarifas.map((t) => (
-          <li key={t.clave} className="grid grid-cols-[1fr_7rem] items-center gap-2">
+          <li key={t.clave} className="grid grid-cols-1 items-center gap-2 sm:grid-cols-[minmax(0,1fr)_7rem]">
             <div className="min-w-0">
               <Input value={t.concepto} onChange={(e) => actualizar((d) => ({ ...d, tarifas: d.tarifas.map((x) => (x.clave === t.clave ? { ...x, concepto: e.target.value } : x)) }))} />
               <div className="mt-0.5 text-[11px] text-muted-foreground">{t.clave} · por {t.unidad}</div>
