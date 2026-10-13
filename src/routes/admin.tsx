@@ -26,7 +26,7 @@ export const Route = createFileRoute("/admin")({
   component: () => <AppShell>{(db) => <Admin db={db} />}</AppShell>,
 });
 
-function Admin({ db }: { db: DB }) {
+export function Admin({ db }: { db: DB }) {
   const [ok, setOk] = useState(false);
   const [clave, setClave] = useState("");
   const [err, setErr] = useState(false);
