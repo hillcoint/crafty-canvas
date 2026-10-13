@@ -203,16 +203,20 @@ function Frentes({ db }: { db: DB }) {
               </summary>
               <div className="space-y-3 border-t border-border p-3">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-              <Input value={f.nombre} onChange={(e) => actualizar((d) => ({ ...d, frentes: d.frentes.map((x) => (x.id === f.id ? { ...x, nombre: e.target.value } : x)) }))} />
+              <Input aria-label="Nombre del frente" value={f.nombre} onChange={(e) => actualizar((d) => ({ ...d, frentes: d.frentes.map((x) => (x.id === f.id ? { ...x, nombre: e.target.value } : x)) }))} />
               <Btn size="sm" variant="ghost" onClick={() => permitirEliminar(historicoFrente(db, f.id), f.nombre) && actualizar((d) => ({ ...d, frentes: d.frentes.filter((x) => x.id !== f.id) }))}>✕</Btn>
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <Campo label="Tipo de frente">
               <Select value={f.tipo} disabled={historicoFrente(db, f.id)} title={historicoFrente(db, f.id) ? "Tipo bloqueado por tener producción histórica" : undefined} onChange={(e) => actualizar((d) => ({ ...d, frentes: d.frentes.map((x) => (x.id === f.id ? { ...x, tipo: e.target.value as TipoFrente } : x)) }))}>
                 {Object.entries(TIPO_FRENTE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </Select>
+              </Campo>
+              <Campo label="Obra">
               <Select value={f.obraId} disabled={historicoFrente(db, f.id)} title={historicoFrente(db, f.id) ? "Obra bloqueada por tener registros históricos" : undefined} onChange={(e) => actualizar((d) => ({ ...d, frentes: d.frentes.map((x) => (x.id === f.id ? { ...x, obraId: e.target.value } : x)) }))}>
                 {db.obras.map((o) => <option key={o.id} value={o.id}>{o.nombre}</option>)}
               </Select>
+              </Campo>
             </div>
             <Chips titulo="Maquinaria" items={db.maquinas.map((m) => ({ id: m.id, label: m.nombre }))} sel={f.maquinaIds} onToggle={(id) => toggle(f.id, "maquinaIds", id)} />
             <Chips titulo="Volquetes" items={db.volquetes.map((v) => ({ id: v.id, label: `${v.nombre} · ${v.capacidad} m³` }))} sel={f.volqueteIds} onToggle={(id) => toggle(f.id, "volqueteIds", id)} />
@@ -222,13 +226,17 @@ function Frentes({ db }: { db: DB }) {
         ))}
       </ul>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <Input className="sm:col-span-2" placeholder="Nombre del nuevo frente" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+        <Input aria-label="Nombre del nuevo frente" className="sm:col-span-2" placeholder="Nombre del nuevo frente" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+        <Campo label="Tipo de frente">
         <Select value={tipo} onChange={(e) => setTipo(e.target.value as TipoFrente)}>
           {Object.entries(TIPO_FRENTE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </Select>
+        </Campo>
+        <Campo label="Obra">
         <Select value={obraId} onChange={(e) => setObraId(e.target.value)}>
           {db.obras.map((o) => <option key={o.id} value={o.id}>{o.nombre}</option>)}
         </Select>
+        </Campo>
         <Btn className="sm:col-span-2" disabled={!nombre.trim() || !obraId} onClick={() => { actualizar((d) => ({ ...d, frentes: [...d.frentes, { id: nuevoId("f"), obraId, nombre: nombre.trim(), tipo, maquinaIds: [], volqueteIds: [] }] })); setNombre(""); }}>Agregar frente</Btn>
       </div>
     </Panel>
