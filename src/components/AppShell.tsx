@@ -38,11 +38,11 @@ export function AppShell({ children }: { children: (db: DB) => ReactNode }) {
         </div>
       )}
 
-      <main className="flex-1 space-y-4 p-4 pb-28">
+      <main className="min-w-0 flex-1 space-y-4 p-4 pb-32">
         {db ? children(db) : <div className="py-20 text-center text-muted-foreground">Cargando datos…</div>}
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card">
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]">
         <ul className="mx-auto grid max-w-3xl grid-cols-5">
           {NAV.map(({ to, label, icon: Icon }) => {
             const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
@@ -50,7 +50,7 @@ export function AppShell({ children }: { children: (db: DB) => ReactNode }) {
               <li key={to}>
                 <Link
                   to={to}
-                  className={`flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-bold uppercase tracking-wide ${active ? "text-primary" : "text-muted-foreground"}`}
+                  className={`flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-wide ${active ? "text-primary" : "text-muted-foreground"}`}
                 >
                   <Icon className="h-6 w-6" />
                   {label}
