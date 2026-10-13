@@ -66,7 +66,7 @@ export function crearDatosDemo(): DB {
           volumen += capDe(vid);
           minuto += 28 + Math.floor(r() * 22);
         }
-        horas.push({ id: `sh${n++}`, recurso: "volquete", recursoId: vid, frenteId: f.id, fecha, horometroInicial: null, horometroFinal: null, horas: 9 + Math.round(r() * 2 * 2) / 2 });
+        horas.push({ id: `sh${n++}`, recurso: "volquete", recursoId: vid, frenteId: f.id, fecha, horometroInicial: null, horometroFinal: null, horas: 9 + Math.round(r() * 2 * 2) / 2, tarifaClave: `hr_volq${capDe(vid)}` });
       }
       for (const mid of f.maquinaIds) {
         const m = maqDe(mid);
