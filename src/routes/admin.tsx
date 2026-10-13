@@ -79,8 +79,7 @@ function Admin({ db }: { db: DB }) {
         <Tarifas db={db} />
       </SeccionAdmin>
       <SeccionAdmin id="datos" titulo="Datos de demostración" detalle="Restablecer ejemplos y consultar la clave" abierta={abierta === "datos"} onToggle={() => mostrar("datos")}>
-        <Panel>
-          <Titulo>Datos demo</Titulo>
+        <Panel className="border-0 bg-transparent p-3 sm:p-4">
           <p className="mb-3 text-sm text-muted-foreground">Reemplaza todos los datos guardados por el mes de ejemplo inicial.</p>
           <Btn variant="danger" className="w-full" onClick={() => window.confirm("¿Restablecer datos demo? Se perderán todos los registros actuales.") && restablecerDemo()}>
             Restablecer datos demo
@@ -154,8 +153,7 @@ function Obras({ db }: { db: DB }) {
   const [nombre, setNombre] = useState("");
   const [ubic, setUbic] = useState("");
   return (
-    <Panel>
-      <Titulo>Obras</Titulo>
+    <Panel className="border-0 bg-transparent p-3 sm:p-4">
       <ul className="mb-3 space-y-2">
         {db.obras.map((o) => (
           <li key={o.id} className="grid grid-cols-[1fr_1fr_auto] gap-2">
@@ -184,13 +182,23 @@ function Frentes({ db }: { db: DB }) {
       frentes: d.frentes.map((f) => (f.id === fid ? { ...f, [campo]: f[campo].includes(id) ? f[campo].filter((x) => x !== id) : [...f[campo], id] } : f)),
     }));
   return (
-    <Panel>
-      <Titulo>Frentes y asignaciones</Titulo>
+    <Panel className="border-0 bg-transparent p-3 sm:p-4">
       {db.frentes.length === 0 && <Vacio>Sin frentes.</Vacio>}
       <ul className="mb-3 space-y-3">
         {db.frentes.map((f) => (
-          <li key={f.id} className="space-y-2 rounded-lg bg-background/40 p-3">
-            <div className="grid grid-cols-[1fr_auto] gap-2">
+          <li key={f.id} className="rounded-lg bg-background/40">
+            <details className="group">
+              <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 p-3 font-display font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden">
+                <span className="min-w-0">
+                  <span className="block break-words text-base">{f.nombre}</span>
+                  <span className="block text-xs font-normal text-muted-foreground">
+                    {TIPO_FRENTE_LABEL[f.tipo]} · {db.obras.find((o) => o.id === f.obraId)?.nombre ?? "Sin obra"}
+                  </span>
+                </span>
+                <ChevronDown aria-hidden="true" className="h-5 w-5 shrink-0 text-primary transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="space-y-3 border-t border-border p-3">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
               <Input value={f.nombre} onChange={(e) => actualizar((d) => ({ ...d, frentes: d.frentes.map((x) => (x.id === f.id ? { ...x, nombre: e.target.value } : x)) }))} />
               <Btn size="sm" variant="ghost" onClick={() => permitirEliminar(historicoFrente(db, f.id), f.nombre) && actualizar((d) => ({ ...d, frentes: d.frentes.filter((x) => x.id !== f.id) }))}>✕</Btn>
             </div>
@@ -204,6 +212,8 @@ function Frentes({ db }: { db: DB }) {
             </div>
             <Chips titulo="Maquinaria" items={db.maquinas.map((m) => ({ id: m.id, label: m.nombre }))} sel={f.maquinaIds} onToggle={(id) => toggle(f.id, "maquinaIds", id)} />
             <Chips titulo="Volquetes" items={db.volquetes.map((v) => ({ id: v.id, label: `${v.nombre} · ${v.capacidad} m³` }))} sel={f.volqueteIds} onToggle={(id) => toggle(f.id, "volqueteIds", id)} />
+              </div>
+            </details>
           </li>
         ))}
       </ul>
@@ -240,8 +250,7 @@ function Volquetes({ db }: { db: DB }) {
   const [nombre, setNombre] = useState("");
   const [cap, setCap] = useState("7");
   return (
-    <Panel>
-      <Titulo>Volquetes</Titulo>
+    <Panel className="border-0 bg-transparent p-3 sm:p-4">
       <p className="mb-2 text-xs text-muted-foreground">Cambiar la capacidad solo afecta a viajes nuevos; los históricos conservan la suya.</p>
       <ul className="mb-3 space-y-2">
         {db.volquetes.map((v) => (
@@ -269,8 +278,7 @@ function Maquinas({ db }: { db: DB }) {
   const [m3h, setM3h] = useState("90");
   const upd = (id: string, patch: Partial<DB["maquinas"][number]>) => actualizar((d) => ({ ...d, maquinas: d.maquinas.map((x) => (x.id === id ? { ...x, ...patch } : x)) }));
   return (
-    <Panel>
-      <Titulo>Excavadoras y cargadores</Titulo>
+    <Panel className="border-0 bg-transparent p-3 sm:p-4">
       <ul className="mb-3 space-y-3">
         {db.maquinas.map((m) => (
           <li key={m.id} className="space-y-2 rounded-lg bg-background/40 p-3">
@@ -308,8 +316,7 @@ function Maquinas({ db }: { db: DB }) {
 
 function Tarifas({ db }: { db: DB }) {
   return (
-    <Panel>
-      <Titulo>Tarifas (MXN)</Titulo>
+    <Panel className="border-0 bg-transparent p-3 sm:p-4">
       <ul className="space-y-2">
         {db.tarifas.map((t) => (
           <li key={t.clave} className="grid grid-cols-[1fr_7rem] items-center gap-2">
