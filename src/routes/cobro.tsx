@@ -44,7 +44,7 @@ function Cobro({ db }: { db: DB }) {
     <>
       <Panel>
         <Titulo>Cobro</Titulo>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Campo label="Obra">
             <Select value={obra} onChange={(e) => setObra(e.target.value)}>
               <option value="todas">Todas las obras</option>
@@ -83,7 +83,7 @@ function Cobro({ db }: { db: DB }) {
       </div>
       <Panel className="border-2 border-primary">
         <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Diferencia (MXN)</div>
-        <div className="font-display text-4xl font-black text-primary">{mxn(c.diferencia)}</div>
+        <div className="break-words font-display text-2xl font-black tabular-nums text-primary sm:text-4xl">{mxn(c.diferencia)}</div>
         <p className="mt-1 font-semibold">
           {c.tarifasPendientes.length
             ? "Resultado provisional: hay conceptos sin tarifa."
@@ -103,7 +103,7 @@ function Total({ label, value, win }: { label: string; value: number; win: boole
   return (
     <div className={`rounded-xl border-2 p-3 ${win ? "border-primary bg-primary/15" : "border-border bg-card"}`}>
       <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className="font-display text-2xl font-bold">{mxn(value)}</div>
+      <div className="break-words font-display text-xl font-bold tabular-nums sm:text-2xl">{mxn(value)}</div>
       {win && <div className="mt-1 inline-block rounded bg-primary px-2 py-0.5 text-[11px] font-bold uppercase text-primary-foreground">Mayor</div>}
     </div>
   );
@@ -116,14 +116,14 @@ function Desglose({ titulo, lineas }: { titulo: string; lineas: Linea[] }) {
       {lineas.length === 0 || lineas.every((l) => l.cantidad === 0) ? <Vacio>Sin registros en el periodo.</Vacio> : (
         <ul className="divide-y divide-border">
           {lineas.map((l, i) => (
-            <li key={i} className="flex items-center justify-between gap-2 py-2 text-sm">
+            <li key={i} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2 text-sm">
               <div className="min-w-0">
                 <div className="truncate font-semibold">{l.concepto}</div>
                 <div className="text-xs text-muted-foreground">
                   {num(l.cantidad)} {l.unidad} × {l.tarifa === null ? "sin tarifa" : `${mxn(l.tarifa)}/${l.unidad}`}
                 </div>
               </div>
-              <div className="shrink-0 font-display font-bold">{mxn(l.importe)}</div>
+              <div className="font-display font-bold tabular-nums">{mxn(l.importe)}</div>
             </li>
           ))}
         </ul>
