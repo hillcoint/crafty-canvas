@@ -35,7 +35,7 @@ function Admin({ db }: { db: DB }) {
       <Panel>
         <Titulo>Administración</Titulo>
         <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (clave === ADMIN_KEY) setOk(true); else setErr(true); }}>
-          <Campo label={`Clave de acceso (${ADMIN_KEY})`}><Input type="password" value={clave} onChange={(e) => { setClave(e.target.value); setErr(false); }} autoFocus /></Campo>
+          <Campo label="Clave de acceso"><Input type="password" value={clave} onChange={(e) => { setClave(e.target.value); setErr(false); }} autoFocus /></Campo>
           {err && <Aviso tone="error">Clave incorrecta.</Aviso>}
           <Btn type="submit" className="w-full">Entrar</Btn>
         </form>
@@ -63,7 +63,20 @@ function Admin({ db }: { db: DB }) {
   );
 }
 
-const quitar = (txt: string) => window.confirm(`¿Eliminar ${txt}? Los registros históricos se conservan.`);
+/** Los maestros con historial no pueden eliminarse: su eliminación ocultaría producción y cobros. */
+const historicoFrente = (db: DB, id: string) =>
+  db.viajes.some((v) => v.frenteId === id) || db.horas.some((h) => h.frenteId === id);
+const historicoVolquete = (db: DB, id: string) =>
+  db.viajes.some((v) => v.volqueteId === id) || db.horas.some((h) => h.recurso === "volquete" && h.recursoId === id);
+const historicoMaquina = (db: DB, id: string) =>
+  db.horas.some((h) => h.recurso === "maquina" && h.recursoId === id);
+function permitirEliminar(tieneHistorico: boolean, descripcion: string): boolean {
+  if (tieneHistorico) {
+    window.alert(`No se puede eliminar ${descripcion}: tiene viajes u horas históricos. Para preservar los cobros, conserva el registro.`);
+    return false;
+  }
+  return window.confirm(`¿Eliminar ${descripcion}? Esta acción no se puede deshacer.`);
+}
 
 function Obras({ db }: { db: DB }) {
   const [nombre, setNombre] = useState("");
@@ -76,7 +89,7 @@ function Obras({ db }: { db: DB }) {
           <li key={o.id} className="grid grid-cols-[1fr_1fr_auto] gap-2">
             <Input value={o.nombre} onChange={(e) => actualizar((d) => ({ ...d, obras: d.obras.map((x) => (x.id === o.id ? { ...x, nombre: e.target.value } : x)) }))} />
             <Input value={o.ubicacion} onChange={(e) => actualizar((d) => ({ ...d, obras: d.obras.map((x) => (x.id === o.id ? { ...x, ubicacion: e.target.value } : x)) }))} />
-            <Btn size="sm" variant="ghost" onClick={() => quitar(o.nombre) && actualizar((d) => ({ ...d, obras: d.obras.filter((x) => x.id !== o.id), frentes: d.frentes.filter((f) => f.obraId !== o.id) }))}>✕</Btn>
+            <Btn size="sm" variant="ghost" onClick={() => permitirEliminar(db.frentes.some((f) => f.obraId === o.id && historicoFrente(db, f.id)), o.nombre) && actualizar((d) => ({ ...d, obras: d.obras.filter((x) => x.id !== o.id), frentes: d.frentes.filter((f) => f.obraId !== o.id) }))}>✕</Btn>
           </li>
         ))}
       </ul>
@@ -107,13 +120,13 @@ function Frentes({ db }: { db: DB }) {
           <li key={f.id} className="space-y-2 rounded-lg bg-background/40 p-3">
             <div className="grid grid-cols-[1fr_auto] gap-2">
               <Input value={f.nombre} onChange={(e) => actualizar((d) => ({ ...d, frentes: d.frentes.map((x) => (x.id === f.id ? { ...x, nombre: e.target.value } : x)) }))} />
-              <Btn size="sm" variant="ghost" onClick={() => quitar(f.nombre) && actualizar((d) => ({ ...d, frentes: d.frentes.filter((x) => x.id !== f.id) }))}>✕</Btn>
+              <Btn size="sm" variant="ghost" onClick={() => permitirEliminar(historicoFrente(db, f.id), f.nombre) && actualizar((d) => ({ ...d, frentes: d.frentes.filter((x) => x.id !== f.id) }))}>✕</Btn>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <Select value={f.tipo} onChange={(e) => actualizar((d) => ({ ...d, frentes: d.frentes.map((x) => (x.id === f.id ? { ...x, tipo: e.target.value as TipoFrente } : x)) }))}>
+              <Select value={f.tipo} disabled={historicoFrente(db, f.id)} title={historicoFrente(db, f.id) ? "Tipo bloqueado por tener producción histórica" : undefined} onChange={(e) => actualizar((d) => ({ ...d, frentes: d.frentes.map((x) => (x.id === f.id ? { ...x, tipo: e.target.value as TipoFrente } : x)) }))}>
                 {Object.entries(TIPO_FRENTE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </Select>
-              <Select value={f.obraId} onChange={(e) => actualizar((d) => ({ ...d, frentes: d.frentes.map((x) => (x.id === f.id ? { ...x, obraId: e.target.value } : x)) }))}>
+              <Select value={f.obraId} disabled={historicoFrente(db, f.id)} title={historicoFrente(db, f.id) ? "Obra bloqueada por tener registros históricos" : undefined} onChange={(e) => actualizar((d) => ({ ...d, frentes: d.frentes.map((x) => (x.id === f.id ? { ...x, obraId: e.target.value } : x)) }))}>
                 {db.obras.map((o) => <option key={o.id} value={o.id}>{o.nombre}</option>)}
               </Select>
             </div>
@@ -163,7 +176,7 @@ function Volquetes({ db }: { db: DB }) {
           <li key={v.id} className="grid grid-cols-[1fr_6rem_auto] gap-2">
             <Input value={v.nombre} onChange={(e) => actualizar((d) => ({ ...d, volquetes: d.volquetes.map((x) => (x.id === v.id ? { ...x, nombre: e.target.value } : x)) }))} />
             <Input type="number" min="1" inputMode="decimal" aria-label="Capacidad m³" value={v.capacidad} onChange={(e) => { const n = Number(e.target.value); if (n > 0) actualizar((d) => ({ ...d, volquetes: d.volquetes.map((x) => (x.id === v.id ? { ...x, capacidad: n } : x)) })); }} />
-            <Btn size="sm" variant="ghost" onClick={() => quitar(v.nombre) && actualizar((d) => ({ ...d, volquetes: d.volquetes.filter((x) => x.id !== v.id), frentes: d.frentes.map((f) => ({ ...f, volqueteIds: f.volqueteIds.filter((x) => x !== v.id) })) }))}>✕</Btn>
+            <Btn size="sm" variant="ghost" onClick={() => permitirEliminar(historicoVolquete(db, v.id), v.nombre) && actualizar((d) => ({ ...d, volquetes: d.volquetes.filter((x) => x.id !== v.id), frentes: d.frentes.map((f) => ({ ...f, volqueteIds: f.volqueteIds.filter((x) => x !== v.id) })) }))}>✕</Btn>
           </li>
         ))}
       </ul>
@@ -191,11 +204,11 @@ function Maquinas({ db }: { db: DB }) {
           <li key={m.id} className="space-y-2 rounded-lg bg-background/40 p-3">
             <div className="grid grid-cols-[1fr_auto] gap-2">
               <Input value={m.nombre} onChange={(e) => upd(m.id, { nombre: e.target.value })} />
-              <Btn size="sm" variant="ghost" onClick={() => quitar(m.nombre) && actualizar((d) => ({ ...d, maquinas: d.maquinas.filter((x) => x.id !== m.id), frentes: d.frentes.map((f) => ({ ...f, maquinaIds: f.maquinaIds.filter((x) => x !== m.id) })) }))}>✕</Btn>
+              <Btn size="sm" variant="ghost" onClick={() => permitirEliminar(historicoMaquina(db, m.id), m.nombre) && actualizar((d) => ({ ...d, maquinas: d.maquinas.filter((x) => x.id !== m.id), frentes: d.frentes.map((f) => ({ ...f, maquinaIds: f.maquinaIds.filter((x) => x !== m.id) })) }))}>✕</Btn>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <Campo label="Tipo">
-                <Select value={m.tipo} onChange={(e) => upd(m.id, { tipo: e.target.value as TipoMaquina })}>
+                <Select value={m.tipo} disabled={historicoMaquina(db, m.id)} title={historicoMaquina(db, m.id) ? "Tipo bloqueado por tener historial" : undefined} onChange={(e) => upd(m.id, { tipo: e.target.value as TipoMaquina })}>
                   <option value="excavadora">Excavadora</option>
                   <option value="cargador">Cargador</option>
                 </Select>
