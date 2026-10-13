@@ -3,6 +3,7 @@ import { fechaDeISO } from "./dates";
 
 export const MIN_ENTRE_VIAJES = 10;
 export const UMBRAL_ALERTA = 0.8;
+export const HORAS_MAX_JORNADA = 12; // 06:00 a 18:00
 
 export function viajesDelDia(db: DB, fecha: string, frenteId?: string): Viaje[] {
   return db.viajes.filter(
@@ -37,6 +38,68 @@ export function calcularHoras(ini: number, fin: number): { ok: true; horas: numb
   if (h < 0) return { ok: false, error: "El horómetro final es menor que el inicial (horas negativas)." };
   if (h > 24) return { ok: false, error: "Más de 24 h en un día: revisa los horómetros." };
   return { ok: true, horas: h };
+}
+
+/**
+ * Valida un nuevo parte de horómetro frente a los registros existentes de la
+ * misma máquina (incluidos los de otros frentes). No se alteran partes históricos.
+ */
+export function validarHorasMaquina(
+  db: DB,
+  maquinaId: string,
+  fecha: string,
+  inicial: number,
+  final: number,
+): { ok: true; horas: number } | { ok: false; error: string } {
+  const calculo = calcularHoras(inicial, final);
+  if (!calculo.ok) return calculo;
+  if (calculo.horas > HORAS_MAX_JORNADA) {
+    return { ok: false, error: "La jornada de 06:00 a 18:00 no permite más de 12 h." };
+  }
+  const registros = db.horas.filter((h) => h.recurso === "maquina" && h.recursoId === maquinaId);
+  const delDia = registros.filter((h) => h.fecha === fecha);
+  if (delDia.some((h) =>
+    h.horometroInicial !== null && h.horometroFinal !== null &&
+    inicial < h.horometroFinal && final > h.horometroInicial
+  )) return { ok: false, error: "Ese intervalo de horómetro ya está registrado, incluso si pertenece a otro frente." };
+  const totalDia = delDia.reduce((sum, h) => sum + h.horas, 0);
+  if (totalDia + calculo.horas > HORAS_MAX_JORNADA + 1e-9) {
+    return { ok: false, error: "La máquina supera 12 h registradas en esta jornada." };
+  }
+  const anterior = registros
+    .filter((h) => h.fecha < fecha && h.horometroFinal !== null)
+    .reduce<number | null>((max, h) => max === null ? h.horometroFinal : Math.max(max, h.horometroFinal!), null);
+  const posterior = registros
+    .filter((h) => h.fecha > fecha && h.horometroInicial !== null)
+    .reduce<number | null>((min, h) => min === null ? h.horometroInicial : Math.min(min, h.horometroInicial!), null);
+  if (anterior !== null && inicial < anterior) {
+    return { ok: false, error: "El horómetro inicial es menor que el registrado en una jornada anterior." };
+  }
+  if (posterior !== null && final > posterior) {
+    return { ok: false, error: "El horómetro final supera el registrado en una jornada posterior." };
+  }
+  return calculo;
+}
+
+/** Horas facturables: una anotación por volquete, frente y día; máximo 12 h/día por unidad. */
+export function validarHorasVolquete(
+  db: DB,
+  volqueteId: string,
+  frenteId: string,
+  fecha: string,
+  horas: number,
+): { ok: true; horas: number } | { ok: false; error: string } {
+  if (!Number.isFinite(horas) || horas <= 0) {
+    return { ok: false, error: "Introduce un número de horas mayor que cero." };
+  }
+  const delDia = db.horas.filter((h) => h.recurso === "volquete" && h.recursoId === volqueteId && h.fecha === fecha);
+  if (delDia.some((h) => h.frenteId === frenteId)) {
+    return { ok: false, error: "Ya hay horas para este volquete, frente y fecha. Elimina o corrige ese registro antes de volver a guardarlo." };
+  }
+  if (delDia.reduce((total, h) => total + h.horas, 0) + horas > HORAS_MAX_JORNADA + 1e-9) {
+    return { ok: false, error: "El volquete supera las 12 horas facturables de la jornada." };
+  }
+  return { ok: true, horas: Math.round(horas * 10) / 10 };
 }
 
 /** m³/h evitando división entre cero */
@@ -98,7 +161,7 @@ export function claveTarifaHora(db: DB, r: RegistroHoras): string | null {
   }
   const m = db.maquinas.find((x) => x.id === r.recursoId);
   if (!m) return null;
-  if (m.tipo === "cargador") return "hr_cargador";
+  if (m.tipo === "cargador") return null; // excluido del cobro equivalente obligatorio
   return m.toneladas >= 30 ? "hr_exc30" : "hr_exc20";
 }
 
@@ -127,14 +190,16 @@ export function calcularCobro(db: DB, obraId: string, desde: string, hasta: stri
   // Horas por recurso
   const horasMap = new Map<string, { nombre: string; horas: number; clave: string | null }>();
   db.horas
-    .filter((h) => ids.has(h.frenteId) && enRango(h.fecha))
+    .filter((h) => ids.has(h.frenteId) && enRango(h.fecha) &&
+      (h.recurso === "volquete" || db.maquinas.some((m) => m.id === h.recursoId && m.tipo === "excavadora")))
     .forEach((h) => {
-      const k = `${h.recurso}:${h.recursoId}`;
+      const clave = h.tarifaClave ?? claveTarifaHora(db, h);
+      const k = `${h.recurso}:${h.recursoId}:${clave ?? "sin-tarifa"}`;
       const nombre =
         h.recurso === "maquina"
           ? db.maquinas.find((m) => m.id === h.recursoId)?.nombre
           : db.volquetes.find((v) => v.id === h.recursoId)?.nombre;
-      const e = horasMap.get(k) ?? { nombre: nombre ?? "(eliminado)", horas: 0, clave: claveTarifaHora(db, h) };
+      const e = horasMap.get(k) ?? { nombre: nombre ?? "(eliminado)", horas: 0, clave };
       e.horas += h.horas;
       horasMap.set(k, e);
     });
@@ -145,7 +210,8 @@ export function calcularCobro(db: DB, obraId: string, desde: string, hasta: stri
     })
     .sort((a, b) => b.importe - a.importe);
 
+  const tarifasPendientes = [ ...volLineas, ...horLineas ].filter((l) => l.cantidad > 0 && l.tarifa === null).map((l) => l.concepto);
   const totalVol = volLineas.reduce((a, l) => a + l.importe, 0);
   const totalHor = horLineas.reduce((a, l) => a + l.importe, 0);
-  return { volLineas, horLineas, totalVol, totalHor, diferencia: totalVol - totalHor };
+  return { volLineas, horLineas, totalVol, totalHor, diferencia: totalVol - totalHor, tarifasPendientes };
 }
