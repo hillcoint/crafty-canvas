@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import { ChevronDown, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Aviso, Btn, Campo, Input, Panel, Select, Titulo, Vacio } from "@/components/field-ui";
 import { actualizar, nuevoId, restablecerDemo } from "@/lib/store";
@@ -29,12 +30,13 @@ function Admin({ db }: { db: DB }) {
   const [ok, setOk] = useState(false);
   const [clave, setClave] = useState("");
   const [err, setErr] = useState(false);
+  const [abierta, setAbierta] = useState<SeccionId | null>(null);
 
   if (!ok)
     return (
       <Panel>
         <Titulo>Administración</Titulo>
-        <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (clave === ADMIN_KEY) setOk(true); else setErr(true); }}>
+        <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (clave === ADMIN_KEY) { setOk(true); setClave(""); } else setErr(true); }}>
           <Campo label="Clave de acceso"><Input type="password" value={clave} onChange={(e) => { setClave(e.target.value); setErr(false); }} autoFocus /></Campo>
           {err && <Aviso tone="error">Clave incorrecta.</Aviso>}
           <Btn type="submit" className="w-full">Entrar</Btn>
@@ -42,24 +44,94 @@ function Admin({ db }: { db: DB }) {
       </Panel>
     );
 
+  const mostrar = (id: SeccionId) => setAbierta((actual) => actual === id ? null : id);
+
   return (
-    <>
-      <Obras db={db} />
-      <Frentes db={db} />
-      <Volquetes db={db} />
-      <Maquinas db={db} />
-      <Tarifas db={db} />
+    <div className="space-y-3">
       <Panel>
-        <Titulo>Datos demo</Titulo>
-        <p className="mb-3 text-sm text-muted-foreground">Reemplaza todos los datos guardados por el mes de ejemplo inicial.</p>
-        <Btn variant="danger" className="w-full" onClick={() => window.confirm("¿Restablecer datos demo? Se perderán todos los registros actuales.") && restablecerDemo()}>
-          Restablecer datos demo
-        </Btn>
-        <p className="mt-4 text-xs text-muted-foreground">
-          Para cambiar la clave de administración edita la constante <code className="text-foreground">ADMIN_KEY</code> en <code className="text-foreground">src/routes/admin.tsx</code>.
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Titulo>Administración</Titulo>
+          <Btn variant="ghost" size="sm" onClick={() => { setOk(false); setAbierta(null); }}>
+            Cerrar sesión
+          </Btn>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Elige qué quieres gestionar. Abre una categoría y las demás permanecerán cerradas.
         </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-muted-foreground">
+          <ShieldCheck className="h-4 w-4 text-primary" aria-hidden="true" />
+          {db.obras.length} obras · {db.frentes.length} frentes · {db.volquetes.length} volquetes · {db.maquinas.length} máquinas
+        </div>
       </Panel>
-    </>
+      <SeccionAdmin id="obras" titulo="Obras" detalle={`${db.obras.length} registradas`} abierta={abierta === "obras"} onToggle={() => mostrar("obras")}>
+        <Obras db={db} />
+      </SeccionAdmin>
+      <SeccionAdmin id="frentes" titulo="Frentes y asignaciones" detalle={`${db.frentes.length} frentes`} abierta={abierta === "frentes"} onToggle={() => mostrar("frentes")}>
+        <Frentes db={db} />
+      </SeccionAdmin>
+      <SeccionAdmin id="volquetes" titulo="Volquetes" detalle={`${db.volquetes.length} unidades`} abierta={abierta === "volquetes"} onToggle={() => mostrar("volquetes")}>
+        <Volquetes db={db} />
+      </SeccionAdmin>
+      <SeccionAdmin id="maquinas" titulo="Excavadoras y cargadores" detalle={`${db.maquinas.length} equipos`} abierta={abierta === "maquinas"} onToggle={() => mostrar("maquinas")}>
+        <Maquinas db={db} />
+      </SeccionAdmin>
+      <SeccionAdmin id="tarifas" titulo="Tarifas (MXN)" detalle={`${db.tarifas.length} conceptos`} abierta={abierta === "tarifas"} onToggle={() => mostrar("tarifas")}>
+        <Tarifas db={db} />
+      </SeccionAdmin>
+      <SeccionAdmin id="datos" titulo="Datos de demostración" detalle="Restablecer ejemplos y consultar la clave" abierta={abierta === "datos"} onToggle={() => mostrar("datos")}>
+        <Panel>
+          <Titulo>Datos demo</Titulo>
+          <p className="mb-3 text-sm text-muted-foreground">Reemplaza todos los datos guardados por el mes de ejemplo inicial.</p>
+          <Btn variant="danger" className="w-full" onClick={() => window.confirm("¿Restablecer datos demo? Se perderán todos los registros actuales.") && restablecerDemo()}>
+            Restablecer datos demo
+          </Btn>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Para cambiar la clave de administración edita la constante <code className="text-foreground">ADMIN_KEY</code> en <code className="text-foreground">src/routes/admin.tsx</code>.
+          </p>
+        </Panel>
+      </SeccionAdmin>
+    </div>
+  );
+}
+
+type SeccionId = "obras" | "frentes" | "volquetes" | "maquinas" | "tarifas" | "datos";
+
+function SeccionAdmin({ id, titulo, detalle, abierta, onToggle, children }: {
+  id: SeccionId;
+  titulo: string;
+  detalle: string;
+  abierta: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <section className="overflow-hidden rounded-xl border border-border bg-card">
+      <h2>
+        <button
+          type="button"
+          id={`cabecera-${id}`}
+          aria-expanded={abierta}
+          aria-controls={`contenido-${id}`}
+          onClick={onToggle}
+          className={`flex min-h-16 w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary ${abierta ? "bg-primary/10" : "hover:bg-secondary/50"}`}
+        >
+          <span className="min-w-0">
+            <span className="block font-display text-lg font-bold uppercase leading-tight text-foreground">{titulo}</span>
+            <span className="block text-sm text-muted-foreground">{detalle}</span>
+          </span>
+          <ChevronDown aria-hidden="true" className={`h-6 w-6 shrink-0 text-primary transition-transform ${abierta ? "rotate-180" : ""}`} />
+        </button>
+      </h2>
+      <div
+        id={`contenido-${id}`}
+        role="region"
+        aria-labelledby={`cabecera-${id}`}
+        hidden={!abierta}
+        className="border-t border-border [&>section]:rounded-none [&>section]:border-0 [&>section]:bg-transparent"
+      >
+        {abierta ? children : null}
+      </div>
+    </section>
   );
 }
 
